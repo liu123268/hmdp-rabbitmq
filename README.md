@@ -65,13 +65,19 @@ java -jar target/hm-dianping-0.0.1-SNAPSHOT.jar
 
 | 配置 | 默认示例 | 说明 |
 | --- | --- | --- |
-| 后端端口 | `18081` | `server.port` |
+| 后端端口 | `8081` | `server.port` |
 | MySQL | `127.0.0.1:3306/hmdp` | 修改数据库地址与登录凭据 |
-| Redis | `127.0.0.1:6381`，逻辑库 `6` | Redisson 与普通 Redis 客户端共用连接配置 |
+| Redis | `127.0.0.1:6381`，逻辑库 `0` | Redisson 与普通 Redis 客户端共用连接配置 |
 | RabbitMQ | `127.0.0.1:5672` | 配置用户权限及消息空间 `/dianping-local` |
-| Nginx | `18080` | 代理至后端 `18081` |
+| Nginx | `8080` | `/api` 请求代理至后端 `8081` |
 
 真实 `application.yaml` 已通过 `.gitignore` 排除；仓库内的示例使用环境变量读取密码。
+
+启动顺序为 MySQL、Redis、RabbitMQ → Java 后端 → Nginx。浏览器页面入口为 `http://localhost:8080/`；`8081` 是后端 HTTP 接口端口，`5672` 是 RabbitMQ 消息连接端口，`15672` 是启用管理插件后的 RabbitMQ 管理页面端口。
+
+端口修改后需要重启 Java 后端，并重新加载 Nginx 配置。以启动日志中的 `Tomcat started on port(s): 8081` 确认实际生效；在后端配置文件中查看 `server.port`，在 Nginx 配置中查看 `listen` 与 `proxy_pass`。
+
+RabbitMQ 连接出现 `Connection refused` 时，应先确认消息服务正在运行并监听 `5672`。打开 Nginx 不会同时启动 Java 后端或 RabbitMQ。
 
 ### 邮件与图片目录
 
@@ -83,4 +89,4 @@ java -jar target/hm-dianping-0.0.1-SNAPSHOT.jar
 | `HMDP_SMTP_PORT` | SMTP 端口，默认 `587` |
 | `HMDP_UPLOAD_DIR` | 图片保存目录，默认 `./nginx-1.18.0/html/hmdp/imgs` |
 
-当前仓库包含后端与 Nginx 配置，业务前端页面需单独准备。使用图片上传时，请确保保存目录存在且具有写入权限。
+业务前端位于 `nginx-1.18.0/html/hmdp`，通过 Nginx 的 `8080` 端口访问；页面接口统一请求 `/api`，由 Nginx 转发至 `8081`。登录页面使用邮箱验证码，历史密码登录地址会跳转至验证码登录页。使用图片上传时，请确保保存目录存在且具有写入权限。
