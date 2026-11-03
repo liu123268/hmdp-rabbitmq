@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
@@ -7,7 +7,7 @@
   <!-- 引入样式 -->
   <link rel="stylesheet" href="./css/element.css">
   <link href="./css/main.css" rel="stylesheet">
-  <link href="./css/login.css" rel="stylesheet">
+  <link href="./css/login.css?v=20261103-agreement-circle" rel="stylesheet">
 
   <style type="text/css">
 
@@ -18,12 +18,12 @@
   <div class="login-container">
     <div class="header">
       <div class="header-back-btn" @click="goBack" ><i class="el-icon-arrow-left"></i></div>
-      <div class="header-title">邮箱验证码登录&nbsp;&nbsp;&nbsp;</div>
+      <div class="header-title">手机号验证码登录&nbsp;&nbsp;&nbsp;</div>
     </div>
     <div class="content">
       <div class="login-form">
         <div style="display: flex; justify-content: space-between">
-          <el-input style="width: 60%" placeholder="请输入邮箱" v-model="form.phone" type="email" >
+          <el-input style="width: 60%" placeholder="请输入手机号" v-model="form.phone" type="tel" maxlength="11" >
           </el-input>
           <el-button style="width: 38%" @click="sendCode" type="success" :disabled="disabled">{{codeBtnMsg}}</el-button>
         </div>
@@ -31,16 +31,16 @@
         <div style="height: 5px"></div>
         <el-input placeholder="请输入验证码" v-model="form.code">
         </el-input>
-        <div style="text-align: center; color: #8c939d;margin: 5px 0">未注册的邮箱验证后自动创建账户</div>
+        <div style="text-align: center; color: #8c939d;margin: 5px 0">未注册的手机号验证后自动创建账户</div>
         <el-button @click="login" style="width: 100%; background-color:#f63; color: #fff;">登录</el-button>
-        <div style="text-align: right; color:#666666; margin: 5px 0">验证码将发送到你的邮箱</div>
+        <div style="text-align: right; color:#666666; margin: 5px 0">本地学习模式：验证码在后端控制台查看，不发送短信</div>
       </div>
       <div class="login-radio">
-        <div>
-          <input type="radio" name="readed" v-model="radio" value="1">
-          <label for="readed"></label>
-        </div>
-        <div>我已阅读并同意
+        <label class="agreement-control" for="readed">
+          <input id="readed" type="checkbox" v-model="agreementAccepted" aria-labelledby="agreement-text">
+        </label>
+        <div class="agreement-text" id="agreement-text">
+          <label for="readed">我已阅读并同意</label>
           <a href="javascript:void(0)">
           《黑马点评用户服务协议》</a>、
           <a href="javascript:void(0)">《隐私政策》</a>
@@ -54,14 +54,14 @@
 <script src="./js/axios.min.js"></script>
 <!-- 引入组件库 -->
 <script src="./js/element.js"></script>
-<script src="./js/common.js"></script>
+<script src="./js/common.js?v=20261103-phone-login"></script>
 <script src="./js/footer.js"></script>
 <script>
 
   const app = new Vue({
     el: "#app",
     data: {
-      radio: "",
+      agreementAccepted: false,
       disabled: false,
       codeBtnMsg: "发送验证码",
       form:{
@@ -69,11 +69,11 @@
     },
     methods: {
       login(){
-        if(!this.radio){
+        if(!this.agreementAccepted){
           this.$message.error("请先确认阅读用户协议！");
           return
         }
-        if (!this.validEmail()) return;
+        if (!this.validPhone()) return;
         if(!this.form.code){
           this.$message.error("验证码不能为空！");
           return
@@ -92,20 +92,21 @@
       goBack(){
         history.back();
       },
-      validEmail(){
-        const email = String(this.form.phone || "").trim();
-        this.form.phone = email;
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          this.$message.error("请输入正确的邮箱地址");
+      validPhone(){
+        const phone = String(this.form.phone || "").trim();
+        this.form.phone = phone;
+        if (!/^1([38][0-9]|4[579]|5[0-3,5-9]|6[6]|7[0135678]|9[89])\d{8}$/.test(phone)) {
+          this.$message.error("请输入正确的手机号");
           return false;
         }
         return true;
       },
       sendCode(){
-        if (this.disabled || !this.validEmail()) return;
+        if (this.disabled || !this.validPhone()) return;
         this.disabled = true;
         axios.post("/user/code?phone=" + encodeURIComponent(this.form.phone))
           .then(() => {
+            this.$message.success("验证码已生成，请在后端控制台查看");
             let i = 60;
             this.codeBtnMsg = (i--) + '秒后可重发';
             let taskId = setInterval(() => this.codeBtnMsg = (i--) + '秒后可重发', 1000);

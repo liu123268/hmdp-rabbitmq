@@ -9,6 +9,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.annotation.Resource;
+import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
@@ -18,6 +19,10 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 容器处理异常时会再次派发到 /error，保留原来的 400/500，不能覆盖成未登录。
+        if (request.getDispatcherType() == DispatcherType.ERROR) {
+            return true;
+        }
 //        1.判断是否需要拦截
         if (UserHolder.getUser()==null)
         {

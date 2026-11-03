@@ -37,27 +37,43 @@
     height: 15%;
     width: 100%;
     display: flex;
-    align-items: start;
+    align-items: flex-start;
 }
-input[type="radio"] + label::before {
-    content: "\a0"; /*不换行空格*/
-    display: inline-block;
-    vertical-align: middle;
+.agreement-control {
+    flex: 0 0 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.agreement-control input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: content-box;
     font-size: 12px;
-    width: 0.7em;
-    height: 0.7em;
-    margin-right: .4em;
-    border-radius: 50%;
+    width: .7em;
+    height: .7em;
+    padding: .2em;
+    margin: 0;
     border: 2px solid #F63;
-    text-indent: .15em;
-    line-height: 1; 
-    padding: .2em;
-}
-input[type="radio"]:checked + label::before {
-    background-color: #F63;
+    border-radius: 50%;
+    background-color: transparent;
     background-clip: content-box;
-    padding: .2em;
+    cursor: pointer;
 }
-input[type="radio"] {
-    opacity: 0;
+.agreement-control input[type="checkbox"]:checked {
+    background-color: #F63;
+}
+.agreement-control input:focus-visible {
+    outline: 2px solid #F63;
+    outline-offset: 3px;
+}
+.agreement-text {
+    flex: 1;
+    min-width: 0;
+    padding-top: 12px;
+}
+.agreement-text label {
+    cursor: pointer;
 }

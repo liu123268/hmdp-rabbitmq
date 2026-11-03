@@ -10,7 +10,6 @@ import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.User;
 import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
-import com.hmdp.utils.MailUtils;
 import com.hmdp.utils.RegexUtils;
 import com.hmdp.utils.SystemConstants;
 import com.hmdp.utils.UserHolder;
@@ -22,7 +21,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import javax.mail.MessagingException;
 import javax.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,9 +41,12 @@ import static com.hmdp.utils.RedisConstants.*;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
-    //发短信
+    // 本地课程模式：验证码写入 Redis，在后端控制台查看。
     @Override
-    public Result sendCode(String phone, HttpSession session) throws MessagingException {
+    public Result sendCode(String phone, HttpSession session) {
+        if (RegexUtils.isPhoneInvalid(phone)) {
+            return Result.fail("手机号格式错误！");
+        }
         // 1. 判断是否在一级限制条件内
         Boolean oneLevelLimit = stringRedisTemplate.opsForSet().isMember(ONE_LEVERLIMIT_KEY + phone, "1");
         if (oneLevelLimit != null && oneLevelLimit) {
@@ -84,14 +85,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
 
           //生成验证码
-        String code = MailUtils.achieveCode();
+        String code = RandomUtil.randomNumbers(6);
 
          //将生成的验证码保持到redis
         stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY+phone,code,LOGIN_CODE_TTL, TimeUnit.MINUTES);
 
-        log.info("发送登录验证码：{}", code);
-         //发送验证码
-        MailUtils.sendtoMail(phone, code);
+        log.debug("本地登录验证码（不发送短信）：{}", code);
 
         // 更新发送时间和次数
         stringRedisTemplate.opsForZSet().add(SENDCODE_SENDTIME_KEY + phone, System.currentTimeMillis() + "", System.currentTimeMillis());
@@ -105,19 +104,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String phone = loginForm.getPhone();
         String code = loginForm.getCode();
         //检验手机号是否正确，不同的请求就应该再次去进行确认
-        if(RegexUtils.isEmailInvalid(phone))
+        if(RegexUtils.isPhoneInvalid(phone))
         {
             //如果无效，则直接返回
-            return Result.fail("邮箱格式不正确！！");
+            return Result.fail("手机号格式错误！");
         }
         //从redis中读取验证码，并进行校验
         String Cachecode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY+phone);
-        //1. 校验邮箱
-        if (RegexUtils.isEmailInvalid(phone)) {
-            return Result.fail("邮箱格式不正确！！");
-        }
         //2. 不符合格式则报错
-        if (Cachecode==null || !code.equals(Cachecode))
+        if (Cachecode==null || !Cachecode.equals(code))
         {
             return Result.fail("无效的验证码");
         }
